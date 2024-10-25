@@ -10,6 +10,7 @@ members = [
     # Driver implementations
     "src/db/ddb",
     "src/db/sqlite",
+    "src/db/pg",
 
     # General utilities.
     "src/std-util",
@@ -19,6 +20,7 @@ members = [
     "examples/hello-toasty",
     "examples/cratehub",
     "examples/user-has-one-profile",
+    "examples/postgres",
 
     # Tests
     "tests/client",
