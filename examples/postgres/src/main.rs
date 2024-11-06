@@ -16,12 +16,8 @@ async fn main() {
 
     println!("{:#?}", schema);
 
-    // Use the in-memory toasty driver
-    //let driver = Sqlite::new();
     let connection = PgConnectOptions::new().host("localhost").connect().await?;
     let driver = Pgsql::new(connection);
-
-    //let driver = DynamoDB::from_env().await.unwrap();
 
     let db = Db::new(schema, driver).await;
     // For now, reset!s

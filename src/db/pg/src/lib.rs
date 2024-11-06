@@ -7,10 +7,8 @@
 //! 3. Test out the statements in the example with actual transactions.
 //! 4. Validate the results are the same.
 
-use std::marker::PhantomData;
-
 use anyhow::Result;
-use sqlx::{postgres::PgRow, types::Text, Database, Encode, Executor, IntoArguments, Row, Type};
+use sqlx::{types::Text, Any, Encode, Row, Type};
 use toasty_core::{
     driver::{Capability, Operation},
     schema, sql,
@@ -19,15 +17,12 @@ use toasty_core::{
 };
 
 #[derive(Debug)]
-pub struct Sqlx<DB: Database> {
-    pool: sqlx::Pool<DB>,
+pub struct Sqlx {
+    pool: sqlx::Pool<Any>,
 }
 
-impl<DB: Database> Sqlx<DB>
-where
-    for<'c> &'c mut DB::Connection: Executor<'c, Database = DB>,
-{
-    pub fn new(pool: sqlx::Pool<DB>) -> Self {
+impl Sqlx {
+    pub fn new(pool: sqlx::Pool<Any>) -> Self {
         Self { pool }
     }
 
@@ -43,10 +38,7 @@ where
 }
 
 #[toasty_core::async_trait]
-impl<DB: Database> Driver for Sqlx<DB>
-where
-    for<'c> &'c mut DB::Connection: Executor<'c, Database = DB>,
-{
+impl Driver for Sqlx {
     fn capability(&self) -> &Capability {
         &Capability::Sql
     }
@@ -91,8 +83,7 @@ where
                 for param in params.iter() {
                     query = query.bind(encode_param(param));
                 }
-                let mut tx = self.pool.begin().await?;
-                query.execute(&mut *tx).await?;
+                query.execute(&self.pool).await?;
 
                 return Ok(stmt::ValueStream::new());
             }
@@ -102,7 +93,7 @@ where
         for param in params.iter() {
             query = query.bind(encode_param(param));
         }
-        let mut tx = conn.begin().await?;
+        let mut tx = self.pool.begin().await?;
         let rows = query.fetch_all(&mut *tx).await?;
 
         let ty = match ty {
@@ -152,11 +143,7 @@ where
 }
 
 // Helper function to convert params to sqlx-compatible values
-fn encode_param<'q, DB: sqlx::Database>(value: &'q stmt::Value) -> impl Encode<'q, DB> + Type<DB>
-where
-    sqlx::types::Text<String>: Encode<'q, DB>,
-    sqlx::types::Text<String>: Type<DB>,
-{
+fn encode_param<'q>(value: &'q stmt::Value) -> impl Encode<'q, Any> + Type<Any> {
     use stmt::Value::*;
 
     match value {

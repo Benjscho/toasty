@@ -9,6 +9,6 @@ toasty-core = { path = "../../core" }
 
 anyhow = "1"
 rusqlite = { version = "0.32", features = ["bundled"] }
-sqlx = { version = "0.8", features = ["postgres"] }
+sqlx = { version = "0.8" }
 
 tokio = "1"
